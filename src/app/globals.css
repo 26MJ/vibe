@@ -1,0 +1,29 @@
+:root {
+  color-scheme: light;
+  font-family: Arial, "Malgun Gothic", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: #111827;
+  background: #f8fafc;
+}
+
+main {
+  width: min(100% - 2rem, 72rem);
+  margin: 0 auto;
+  padding: 4rem 0;
+}
+
+h1 {
+  margin: 0 0 0.75rem;
+}
+
+p {
+  margin: 0;
+  color: #4b5563;
+}

@@ -56,3 +56,13 @@
 - [ ] 모든 KOBIS 숫자 문자열이 런타임에 검증·변환되는가?
 - [ ] 캐시 키, 만료, 오래된 캐시 반환 정책이 문서와 구현에서 일치하는가?
 - [ ] 실행한 검증과 미실행 검증을 최종 보고에 구분했는가?
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
