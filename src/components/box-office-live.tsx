@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { KobisPeriodType, BoxOfficeRecord } from "@/lib/kobis-box-office";
 
 export function BoxOfficeLive() {
@@ -9,7 +9,7 @@ export function BoxOfficeLive() {
   const [state, setState] = useState<"loading" | "success" | "error">("loading");
   const [items, setItems] = useState<BoxOfficeRecord[]>([]);
   const [message, setMessage] = useState("");
-  async function load(nextDate = date, nextPeriod = periodType) {
+  const load = useCallback(async (nextDate = date, nextPeriod = periodType) => {
     setState("loading");
     try {
       const response = await fetch(`/api/box-office?date=${nextDate}&periodType=${nextPeriod}`);
@@ -17,8 +17,8 @@ export function BoxOfficeLive() {
       if (!response.ok) throw new Error(body.error?.message ?? "요청에 실패했습니다.");
       setItems(body.data.items); setMessage(""); setState("success");
     } catch (error) { setItems([]); setMessage(error instanceof Error ? error.message : "요청에 실패했습니다."); setState("error"); }
-  }
-  useEffect(() => { void load(); }, []);
+  }, [date, periodType]);
+  useEffect(() => { const timer = window.setTimeout(() => { void load(); }, 0); return () => window.clearTimeout(timer); }, [load]);
   return <main className="dashboard-shell"><header className="dashboard-header"><p className="eyebrow">F1 · 박스오피스 목록</p><h1>영화 박스오피스 인사이트</h1><p>KOBIS Open API 실시간 조회</p><span className="mode-badge">DATA_MODE: live</span></header>
     <section className="filters" aria-label="박스오피스 조회 조건"><label>조회 날짜<input aria-label="조회 날짜" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></label><label>기간 유형<select aria-label="기간 유형" value={periodType} onChange={(e) => setPeriodType(e.target.value as KobisPeriodType)}><option value="daily">일간</option><option value="weekly">주간</option><option value="weekend">주말</option></select></label><button type="button" onClick={() => void load()}>조회</button></section>
     {state === "loading" && <section className="status-panel loading" aria-live="polite"><h2>박스오피스 정보를 불러오는 중입니다.</h2></section>}
