@@ -69,4 +69,43 @@ $env:DATA_MODE="live"; npm run dev
 Invoke-WebRequest "http://localhost:3000/api/box-office?date=2026-09-06&periodType=daily"
 ```
 
+## 6. B단계 저장·캐시
+
+`supabase/migrations/001_box_office.sql`은 ERD의 `movies`, `box_office_periods`, `box_office_performances` 세 테이블을 만든다. `save_box_office_period`는 한 트랜잭션 안에서 영화 upsert → 조회 기간 upsert → 기존 기간 실적 전체 삭제 → 새 실적 insert 순으로 처리한다. 중간 오류는 함수 전체를 취소해 부분 저장을 남기지 않는다. 기간별 advisory lock과 요청 시작 시각 비교로 동시 저장과 오래된 응답의 역전 덮어쓰기를 막는다.
+
+`read_box_office_period`는 기간 종류와 기준일로 저장 데이터를 읽는다. RLS를 켜고 anon/authenticated에는 테이블·함수 권한을 주지 않으며, 서버의 `SUPABASE_SECRET_KEY`를 사용하는 service role만 RPC를 실행한다.
+
+API는 저장본을 먼저 읽는다. `expires_at`이 미래면 `meta.source=database`로 반환한다. 정상 데이터는 24시간, 정상 빈 결과는 1시간 TTL이다. 저장본이 없거나 만료된 경우에만 KOBIS를 호출하고 저장 후 `meta.source=kobis`로 반환한다.
+
+| 단계 실패 | 응답 | 화면 안내 |
+|---|---:|---|
+| 저장소 읽기 실패 | `503 SERVICE_UNAVAILABLE` | 저장 데이터를 읽지 못했다는 재시도 안내 |
+| KOBIS 호출 실패/형식 오류 | `502 UPSTREAM_ERROR` 또는 `504 TIMEOUT` | 최신 데이터를 가져오지 못했다는 안내 |
+| 저장 실패 | `503 SERVICE_UNAVAILABLE` | 데이터 저장 실패 재시도 안내 |
+
+## 7. Supabase 준비 순서
+
+1. Supabase 프로젝트를 만들고 SQL Editor에서 `supabase/migrations/001_box_office.sql` 전체를 실행한다.
+2. 프로젝트 URL과 서버 전용 service role secret을 확인한다.
+3. `.env.local`에 설정한다. 값 자체는 화면·로그·문서에 복사하지 않는다.
+
+```env
+DATA_MODE=live
+KOBIS_API_KEY=...
+SUPABASE_URL=https://<project>.supabase.co
+SUPABASE_SECRET_KEY=...
+```
+
+4. 설정을 마쳤다고 확인한 뒤 서버를 재시작한다. 그때 실제 저장·캐시 hit/miss와 demo/live 회귀를 확인한다.
+
+## 8. 저장 데이터 검증
+
+```bash
+npm run verify:data -- --date=YYYY-MM-DD --period=daily
+```
+
+DB를 읽기 전용으로 조회하고 같은 날짜를 KOBIS에서 새로 조회해 비교한다. 종료 코드는 `0=모두 일치`, `1=불일치 또는 비교 실패`, `2=저장된 기간 없음`이다. ERD에 원본 JSON 컬럼을 추가하지 않았으므로 `storedSnapshot`은 저장된 정규화 행의 완전성을 확인하고, `kobis`는 현재 원본과 전체 필드를 비교한다.
+
+같은 요청을 두 번 확인할 때 첫 응답의 `meta.source`가 `kobis`, TTL 안의 두 번째 응답이 `database`인지 확인한다. 설정 완료 전에는 실제 검증 명령을 실행하지 않는다.
+
 이 단계에서는 DB·Supabase·캐시를 호출하지 않는다.
