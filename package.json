@@ -3,13 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22 <23"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "next": "latest",
@@ -23,6 +28,7 @@
     "eslint": "latest",
     "eslint-config-next": "latest",
     "typescript": "latest",
-    "vitest": "latest"
+    "vitest": "latest",
+    "@playwright/test": "latest"
   }
 }
